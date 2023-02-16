@@ -1,11 +1,13 @@
 from __future__ import annotations
+import math
 
 TITLE_LINE_LENGTH = 30
 DESCRIPTION_CUTOFF = 23
 AMOUNT_CUTOFF = 7
 DECIMAL_PLACES = 2
 FILL_CHAR = "*"
-
+CHART_LINE_LENGTH = 14
+BAR_CHARACTER = "o"
 
 class Category:
 
@@ -75,5 +77,47 @@ class Category:
         return False
 
 
-def create_spend_chart(categories):
-    return
+def create_spend_chart(categories: list[Category]) -> str:
+    output = ""
+    CHART_TITLE = "Percentage spent by category\n"
+    output += CHART_TITLE
+    spending = {}
+    names = []
+    # getting spending for each category
+    for category in categories:
+        names.append(category.name)
+        for transaction in category.ledger:
+            if transaction['amount'] < 0:
+                spending[category.name] = spending.get(category.name, 0) + abs(transaction['amount'])
+    total_spending = sum(spending.values())
+    # rounding spending for each category
+    spending = {key: math.floor(val/total_spending*10)*10 for key, val in spending.items()}
+    # spending = {k: v for k, v in sorted(spending.items(), key=lambda item: item[1], reverse=True)}
+
+    for percent in range(100, -1, -10):
+        line = f"{str(percent).rjust(3)}|"
+        for name in names:
+            val = spending[name]
+            if val >= percent:
+                line += f" {BAR_CHARACTER} "
+            else:
+                line += "   "
+        # padding = CHART_LINE_LENGTH - len(line)
+        output += f"{line.ljust(CHART_LINE_LENGTH)}\n"
+
+    bottom_line = f"{' '*4}{'-'*(CHART_LINE_LENGTH-4)}\n"
+    output += bottom_line
+
+    # parsing and filling names
+    max_name_length = max([len(x) for x in names])
+    padded_names = [x + " "*(max_name_length - len(x)) for x in names]
+
+    for i in range(max_name_length):
+        line = f"{' '*4}"
+        for name in padded_names:
+            line += f" {name[i]} "
+
+        output += f"{line.ljust(CHART_LINE_LENGTH)}\n"
+
+
+    return output[:-1]
